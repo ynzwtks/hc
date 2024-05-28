@@ -61,7 +61,6 @@ func headReader(dir string, fileName string) []string {
 func ExecuteWithFileInput(filePath string, cmd []string, displayStdout bool, displayStderr bool) (stdout string, stderr string, execErr error) {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println(err)
 		return "", "", err
 	}
 
@@ -89,7 +88,6 @@ func ExecuteWithFileInput(filePath string, cmd []string, displayStdout bool, dis
 	// Execute the command
 	err = c.Run()
 	if err != nil {
-		fmt.Println(err)
 		return outb.String(), errb.String(), err
 	}
 
