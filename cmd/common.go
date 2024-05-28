@@ -222,7 +222,6 @@ func readParameter() {
 	for i := 0; i < set.TestDataNum; i++ {
 		fileName := fmt.Sprintf("%04d.txt", i)
 		ret := headReader(set.TestDataPath, fileName)
-		// Todo exDatのエラー処理を追加する
 		if len(exHeader) != 0 && len(exDat) == set.TestDataNum {
 			ret = append(ret, exDat[i]...)
 		}

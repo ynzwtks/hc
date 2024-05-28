@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"github.com/ynzwtks/ahccli/cmd"
+	"github.com/ynzwtks/hc/cmd"
 )
 
 var version string
 
 func main() {
-	fmt.Println(version)
+	cmd.Version = version
 	cmd.Execute()
 }

@@ -28,7 +28,6 @@ var runCmd = &cobra.Command{
 		if len(cmn.BuildCmd) != 0 {
 			buildCmd(cmn.BuildCmd)
 		}
-
 		runtimeInit()
 
 		//テストID指定(-t)の場合
@@ -228,6 +227,7 @@ func worker(id int, wg *sync.WaitGroup, tasks <-chan string, mutex *sync.Mutex) 
 			ri.ng = append(ri.ng, idx)
 		}
 		mutex.Lock()
+
 		ri.scoreSum += sc
 		if sc != 0 {
 			ri.scoreLogSum += math.Log(float64(sc))
@@ -481,16 +481,16 @@ func draw(mutex *sync.Mutex) {
 		sp(10).Render(itoa(ri.bestDist[12])))
 	fmt.Println("")
 
-	top := lipgloss.NewStyle().Width(35).Foreground(lipgloss.Color("7")).Align(lipgloss.Left).Bold(true)
-	top2 := lipgloss.NewStyle().Width(35).Foreground(lipgloss.Color("7")).Align(lipgloss.Left).Bold(true)
-	fmt.Printf("%-35s%-35s%-35s%-35s\n", top.Render("Decrease(Last)"), top.Render("Decrease(Best)"), top2.Render("Increase(Last)"), top2.Render("Increase(Best)"))
+	top := lipgloss.NewStyle().Width(37).Foreground(lipgloss.Color("7")).Align(lipgloss.Left).Bold(true)
+	top2 := lipgloss.NewStyle().Width(37).Foreground(lipgloss.Color("7")).Align(lipgloss.Left).Bold(true)
+	fmt.Printf("%-37s%-37s%-37s%-37s\n", top.Render("Decrease(Last)"), top.Render("Decrease(Best)"), top2.Render("Increase(Last)"), top2.Render("Increase(Best)"))
 	for i := 0; i < 3; i++ {
 		t = ""
 		for j := 0; j < 4; j++ {
 			if len(sv[j]) > i {
-				fmt.Printf("%-35s", sv[j][i])
+				fmt.Printf("%-37s", sv[j][i])
 			} else {
-				fmt.Printf("%-35s", "-")
+				fmt.Printf("%-37s", "-")
 			}
 		}
 		fmt.Printf("\n")
@@ -513,11 +513,11 @@ func runTestCmd(id string) (int, bool) {
 	if cmn.IsInteractive == true {
 		cmd := strings.Fields(cmn.JudgeProgram)
 		cmd = append(cmd, strings.Fields(cmn.TargetProgram)...)
-		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, false)
-		s = strings.Fields(string(o2))
+		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, false, false)
+		s = strings.Split(string(o2), "\n")
 	} else {
 		cmd := strings.Fields(cmn.TargetProgram)
-		o1, o2, err = ExecuteWithFileInput(testFile, cmd, false)
+		o1, o2, err = ExecuteWithFileInput(testFile, cmd, false, false)
 
 		tmpFile := fmt.Sprintf("%s/%s_o.txt", set.TestDataPath, id)
 		writeToFile(tmpFile, []byte(o1), false)
@@ -549,12 +549,13 @@ func runSingleCmd(id string) {
 	if cmn.IsInteractive == true {
 		cmd := strings.Fields(cmn.JudgeProgram)
 		cmd = append(cmd, strings.Fields(cmn.TargetProgram)...)
-		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, true)
+		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, false, false)
 		_ = o1
-		s = strings.Fields(string(o2))
+		s = strings.Split(string(o2), "\n")
+
 	} else {
 		cmd := strings.Fields(cmn.TargetProgram)
-		o1, o2, err = ExecuteWithFileInput(testFile, cmd, true)
+		o1, o2, err = ExecuteWithFileInput(testFile, cmd, false, true)
 
 		tmpFile := fmt.Sprintf("%s/out.txt", previousDirectory)
 		writeToFile(tmpFile, []byte(o1), false)
