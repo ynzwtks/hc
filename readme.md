@@ -3,44 +3,51 @@ AtCoder Heuristic Contestのローカルテストをサポートするためのc
 シングルバイナリ&インタラクティブなセットアップで導入時の面倒な作業を極力なくし、テスト実行からログの記録まで簡単に実行することができます。
 
 ### 主な機能
-- ローカルマシンでのテストの並列実行
+- ローカルマシンでのテスト並列実行
 - テストセットの生成と切り替え
 - テスト実行中の経過表示
 - テストケースの入力パラーメータをキーにしたフィルタリング実行
 - ローカル版公式standingツールとのログの連携
-- Cloud Run ジョブによるテスト並列実行
+- Cloud Run ジョブによるテスト並列実行(クラウドの設定が別途必要）
   
 ### 実行イメージ
-- ローカルテストの実行
-  <img width="938" alt="スクリーンショット 2024-05-29 19 54 50" src="https://github.com/ynzwtks/hc/assets/73768325/a043364e-7920-47c4-8d31-3f395603ce5b">
 
-- ログの表示
-  <img width="543" alt="スクリーンショット 2024-05-29 20 02 25" src="https://github.com/ynzwtks/hc/assets/73768325/cf83f8c4-4ac4-4aab-8891-2d5366b0c3ac">
+- ローカルテストの実行<BR>
+<img width="938" alt="スクリーンショット 2024-05-29 19 54 50" src="https://github.com/ynzwtks/hc/assets/73768325/a043364e-7920-47c4-8d31-3f395603ce5b">
 
-- Cloud Runジョブによる並列実行
+- ログの表示<BR>
+<img width="543" alt="スクリーンショット 2024-05-29 20 02 25" src="https://github.com/ynzwtks/hc/assets/73768325/cf83f8c4-4ac4-4aab-8891-2d5366b0c3ac">
+
+- Cloud Runジョブによる並列実行<BR>
 <img width="690" alt="スクリーンショット 2024-05-29 20 18 55" src="https://github.com/ynzwtks/hc/assets/73768325/baa974ff-5287-4c9d-b90c-d0442b24ccb7">
 
-## 動作環境
-- macOS ※AHC030,AHC031,AHC033で動作確認済
-- Windows(動作未検証)
-- Linux(動作未検証)
+<br>
 
+## 動作環境
+| OS  | 備考 |
+| ------------- | ------------- |
+| macOS  | AHC030、AHC031、AHC033で動作確認済  |
+| Windows  | 動作未検証  |
+| Linux  | 動作未検証  |
+
+---
 ## Quick Start
-### 事前準備
-- 実行プログラムの準備
-    - Atcoder公式から提供されるツール
+事前準備
+1. 実行プログラムの準備
+   Atcoder公式から提供されるツールをダウンロードして
+
         - テスト生成プログラム(gen)
         - スコア計算プログラム(vis or tester)
 
        Windows以外の場合、下記でビルドを行い
-          
-         cargo build --release
-
+```
+cargo build --release
+```
       ./target/release/配下にファイルが出力されます
             
   - ジャッジ対象のプログラム
   
-- コンテスト情報の確認
+2. コンテスト情報の確認
     - スコアの評価方法(スコアの最大化 or 最小化)
     - インタラクティブ問題か否か
 ### Install
