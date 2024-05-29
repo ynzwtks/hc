@@ -156,7 +156,6 @@ var logClearCmd = &cobra.Command{
 		renameFile(f, f+".1")
 		f = fmt.Sprintf("%s/%s", logs.logDir, InputCsv)
 		renameFile(f, f+".1")
-		fmt.Println(f)
 	},
 }
 
