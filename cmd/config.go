@@ -258,6 +258,7 @@ func setupSystemTest(contestName string) {
 	t.TestDataNum = countLines(seeds)
 	t.SetName = "system"
 	t.TestDataPath = testPath
+	t.IsSystemTest = true
 	conf.TestSets["system"] = t
 	cmn.DefaultSet = t.SetName
 	UpdateConfig()
