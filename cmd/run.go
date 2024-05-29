@@ -462,9 +462,9 @@ func draw(mutex *sync.Mutex) {
 	}
 	sp := lipgloss.NewStyle().Align(lipgloss.Left).Width
 	wh := lipgloss.NewStyle().Bold(false).Width(10).Background(lipgloss.Color("white"))
-	sc := lipgloss.NewStyle().Bold(false).Width(10).Align(lipgloss.Right).Background(lipgloss.Color("4"))
-	sc2 := lipgloss.NewStyle().Bold(false).Width(20).Align(lipgloss.Center).Background(lipgloss.Color("2"))
-	sc3 := lipgloss.NewStyle().Bold(false).Width(10).Align(lipgloss.Left).Background(lipgloss.Color("1"))
+	sc := lipgloss.NewStyle().Bold(false).Width(10).Align(lipgloss.Right).Background(lipgloss.Color("1")).Foreground(lipgloss.Color("8")).Bold(true)
+	sc2 := lipgloss.NewStyle().Bold(false).Width(20).Align(lipgloss.Center).Background(lipgloss.Color("3")).Foreground(lipgloss.Color("8")).Bold(true)
+	sc3 := lipgloss.NewStyle().Bold(false).Width(10).Align(lipgloss.Left).Background(lipgloss.Color("6")).Foreground(lipgloss.Color("8")).Bold(true)
 	fmt.Println("")
 	fmt.Printf("%s%s%s%s%s%s%s%s%s%s%s%s\n", sp(10).Render(""), sc.Render("-160%"), sc.Render("-80%"), sc.Render("-40"), sc.Render("-20%"), sc.Render("-10%"), sc2.Render("0%"), sc3.Render("10%"), sc3.Render("20%"), sc3.Render("40%"), sc3.Render("80%"), sc3.Render("160%"))
 	fmt.Printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n", wh.Render("Last"), sp(2).Render(""),

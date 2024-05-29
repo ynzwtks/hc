@@ -305,7 +305,7 @@ func printTitle() {
 	dl := len(cmn.ContestName) + len(opt.setName) + 2
 	var style = lipgloss.NewStyle().
 		Bold(true).
-		Background(lipgloss.Color("7")).
+		Background(lipgloss.Color("8")).
 		Align(lipgloss.Center).
 		Width(dl + 4)
 	fmt.Printf("%s", style.Render(fmt.Sprintf("%s(%s)", cmn.ContestName, opt.setName)))
