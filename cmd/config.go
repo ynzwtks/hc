@@ -245,14 +245,12 @@ func setupSystemTest(contestName string) {
 	}
 	err = downloadFile(inputCsv, inputCsvURL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to download input file:%s\n", inputCsvURL)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Not Found :%s\n", inputCsvURL)
 	}
 
 	err = downloadFile(resultCsv, resultCsvURL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to download input file: %s\n", inputCsvURL)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Not found : %s\n", resultCsvURL)
 	}
 	t := TestSet{}
 	t.TestDataNum = countLines(seeds)
