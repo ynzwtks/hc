@@ -236,14 +236,14 @@ runコマンド、logコマンドで-fオプションを付与することで例
         
   2. contest.toml内のテストセットの定義セクションの「ExFields」にパラメータ名を定義します。
    
-    ```toml
-    [{SetName}]
-    SetName = '{SetName}'
-    TestDataPath = 'test/{SetName}/'
-    TestDataNum = 3000
-    ExFields = 'A B'  
-    IsSystemTest = false
-    ```
+  ```toml
+  [{SetName}]
+  SetName = '{SetName}'
+  TestDataPath = 'test/{SetName}/'
+  TestDataNum = 3000
+  ExFields = 'A B'  
+  IsSystemTest = false
+  ```
     
 <br>
 
