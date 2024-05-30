@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -57,10 +58,9 @@ func headReader(dir string, fileName string) []string {
 }
 
 // ExecuteWithFileInput はファイルから入力を読み込んでプログラムを実行します。
-func ExecuteWithFileInput(filePath string, cmd []string, enableDisplay bool) (stdout string, stderr string, execErr error) {
+func ExecuteWithFileInput(filePath string, cmd []string, displayStdout bool, displayStderr bool) (stdout string, stderr string, execErr error) {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println(err)
 		return "", "", err
 	}
 
@@ -75,19 +75,19 @@ func ExecuteWithFileInput(filePath string, cmd []string, enableDisplay bool) (st
 	// Get the output from both stdout and stderr
 	var outb, errb bytes.Buffer
 
-	if enableDisplay {
+	if displayStdout {
+		c.Stdout = os.Stdout
+		c.Stderr = &errb
+	} else if displayStderr {
 		c.Stdout = &outb
 		c.Stderr = os.Stderr
-
 	} else {
 		c.Stdout = &outb
 		c.Stderr = &errb
 	}
-
 	// Execute the command
 	err = c.Run()
 	if err != nil {
-		fmt.Println(err)
 		return outb.String(), errb.String(), err
 	}
 
@@ -433,4 +433,13 @@ func insertLine(filename string, lineNumber int, newLine string) error {
 	}
 
 	return nil
+}
+
+func dbg(file string, s ...interface{}) {
+	pc, _, line, ok := runtime.Caller(1)
+	if ok {
+		funcName := runtime.FuncForPC(pc).Name()
+		msg := fmt.Sprintf("%s:%d:%s\n", funcName, line, fmt.Sprint(s))
+		writeToFile(file, []byte(msg), true)
+	}
 }

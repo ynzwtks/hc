@@ -28,7 +28,6 @@ var runCmd = &cobra.Command{
 		if len(cmn.BuildCmd) != 0 {
 			buildCmd(cmn.BuildCmd)
 		}
-
 		runtimeInit()
 
 		//テストID指定(-t)の場合
@@ -228,6 +227,7 @@ func worker(id int, wg *sync.WaitGroup, tasks <-chan string, mutex *sync.Mutex) 
 			ri.ng = append(ri.ng, idx)
 		}
 		mutex.Lock()
+
 		ri.scoreSum += sc
 		if sc != 0 {
 			ri.scoreLogSum += math.Log(float64(sc))
@@ -462,9 +462,9 @@ func draw(mutex *sync.Mutex) {
 	}
 	sp := lipgloss.NewStyle().Align(lipgloss.Left).Width
 	wh := lipgloss.NewStyle().Bold(false).Width(10).Background(lipgloss.Color("white"))
-	sc := lipgloss.NewStyle().Bold(false).Width(10).Align(lipgloss.Right).Background(lipgloss.Color("4"))
-	sc2 := lipgloss.NewStyle().Bold(false).Width(20).Align(lipgloss.Center).Background(lipgloss.Color("2"))
-	sc3 := lipgloss.NewStyle().Bold(false).Width(10).Align(lipgloss.Left).Background(lipgloss.Color("1"))
+	sc := lipgloss.NewStyle().Bold(false).Width(10).Align(lipgloss.Right).Background(lipgloss.Color("1")).Foreground(lipgloss.Color("8")).Bold(true)
+	sc2 := lipgloss.NewStyle().Bold(false).Width(20).Align(lipgloss.Center).Background(lipgloss.Color("3")).Foreground(lipgloss.Color("8")).Bold(true)
+	sc3 := lipgloss.NewStyle().Bold(false).Width(10).Align(lipgloss.Left).Background(lipgloss.Color("6")).Foreground(lipgloss.Color("8")).Bold(true)
 	fmt.Println("")
 	fmt.Printf("%s%s%s%s%s%s%s%s%s%s%s%s\n", sp(10).Render(""), sc.Render("-160%"), sc.Render("-80%"), sc.Render("-40"), sc.Render("-20%"), sc.Render("-10%"), sc2.Render("0%"), sc3.Render("10%"), sc3.Render("20%"), sc3.Render("40%"), sc3.Render("80%"), sc3.Render("160%"))
 	fmt.Printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n", wh.Render("Last"), sp(2).Render(""),
@@ -481,16 +481,16 @@ func draw(mutex *sync.Mutex) {
 		sp(10).Render(itoa(ri.bestDist[12])))
 	fmt.Println("")
 
-	top := lipgloss.NewStyle().Width(35).Foreground(lipgloss.Color("7")).Align(lipgloss.Left).Bold(true)
-	top2 := lipgloss.NewStyle().Width(35).Foreground(lipgloss.Color("7")).Align(lipgloss.Left).Bold(true)
-	fmt.Printf("%-35s%-35s%-35s%-35s\n", top.Render("Decrease(Last)"), top.Render("Decrease(Best)"), top2.Render("Increase(Last)"), top2.Render("Increase(Best)"))
+	top := lipgloss.NewStyle().Width(37).Foreground(lipgloss.Color("7")).Align(lipgloss.Left).Bold(true)
+	top2 := lipgloss.NewStyle().Width(37).Foreground(lipgloss.Color("7")).Align(lipgloss.Left).Bold(true)
+	fmt.Printf("%-37s%-37s%-37s%-37s\n", top.Render("Decrease(Last)"), top.Render("Decrease(Best)"), top2.Render("Increase(Last)"), top2.Render("Increase(Best)"))
 	for i := 0; i < 3; i++ {
 		t = ""
 		for j := 0; j < 4; j++ {
 			if len(sv[j]) > i {
-				fmt.Printf("%-35s", sv[j][i])
+				fmt.Printf("%-37s", sv[j][i])
 			} else {
-				fmt.Printf("%-35s", "-")
+				fmt.Printf("%-37s", "-")
 			}
 		}
 		fmt.Printf("\n")
@@ -513,11 +513,11 @@ func runTestCmd(id string) (int, bool) {
 	if cmn.IsInteractive == true {
 		cmd := strings.Fields(cmn.JudgeProgram)
 		cmd = append(cmd, strings.Fields(cmn.TargetProgram)...)
-		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, false)
-		s = strings.Fields(string(o2))
+		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, false, false)
+		s = strings.Split(string(o2), "\n")
 	} else {
 		cmd := strings.Fields(cmn.TargetProgram)
-		o1, o2, err = ExecuteWithFileInput(testFile, cmd, false)
+		o1, o2, err = ExecuteWithFileInput(testFile, cmd, false, false)
 
 		tmpFile := fmt.Sprintf("%s/%s_o.txt", set.TestDataPath, id)
 		writeToFile(tmpFile, []byte(o1), false)
@@ -549,12 +549,13 @@ func runSingleCmd(id string) {
 	if cmn.IsInteractive == true {
 		cmd := strings.Fields(cmn.JudgeProgram)
 		cmd = append(cmd, strings.Fields(cmn.TargetProgram)...)
-		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, true)
+		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, false, false)
 		_ = o1
-		s = strings.Fields(string(o2))
+		s = strings.Split(string(o2), "\n")
+
 	} else {
 		cmd := strings.Fields(cmn.TargetProgram)
-		o1, o2, err = ExecuteWithFileInput(testFile, cmd, true)
+		o1, o2, err = ExecuteWithFileInput(testFile, cmd, false, true)
 
 		tmpFile := fmt.Sprintf("%s/out.txt", previousDirectory)
 		writeToFile(tmpFile, []byte(o1), false)
@@ -577,9 +578,9 @@ func runSingleCmd(id string) {
 	}
 
 	if len(logs.vals2) != 0 && set.IsSystemTest {
-		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best2[opt.target], calcRank(sc, int(opt.target)), len(logs.vals2))
+		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best2[opt.target], calcRank(sc, int(opt.target)), len(logs.vals2)+1)
 	} else {
-		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best[opt.target], calcRank(sc, int(opt.target)), len(logs.vals))
+		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best[opt.target], calcRank(sc, int(opt.target)), len(logs.vals)+1)
 	}
 
 	if len(set.Seeds) != 0 {

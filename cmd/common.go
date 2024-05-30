@@ -222,7 +222,6 @@ func readParameter() {
 	for i := 0; i < set.TestDataNum; i++ {
 		fileName := fmt.Sprintf("%04d.txt", i)
 		ret := headReader(set.TestDataPath, fileName)
-		// Todo exDatのエラー処理を追加する
 		if len(exHeader) != 0 && len(exDat) == set.TestDataNum {
 			ret = append(ret, exDat[i]...)
 		}
@@ -306,7 +305,7 @@ func printTitle() {
 	dl := len(cmn.ContestName) + len(opt.setName) + 2
 	var style = lipgloss.NewStyle().
 		Bold(true).
-		Background(lipgloss.Color("7")).
+		Background(lipgloss.Color("8")).
 		Align(lipgloss.Center).
 		Width(dl + 4)
 	fmt.Printf("%s", style.Render(fmt.Sprintf("%s(%s)", cmn.ContestName, opt.setName)))

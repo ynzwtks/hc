@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -91,7 +92,7 @@ func showHistogram() {
 		// ブラウザを開く
 		err := open.Start("http://localhost:8080")
 		if err != nil {
-			log.Fatal("Failed to open browser: ", err)
+			fmt.Fprintln(os.Stderr, "Failed to open browser: ", err)
 		}
 	}()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

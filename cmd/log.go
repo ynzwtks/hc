@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"math"
+	"os"
 	"sort"
 	"strconv"
 )
@@ -53,7 +54,7 @@ func showResults(id string) {
 			}
 		}
 		if ok == false {
-			fmt.Println("Error: log not found")
+			fmt.Fprintln(os.Stderr, "Error: log not found")
 			return
 		}
 	}
@@ -155,7 +156,6 @@ var logClearCmd = &cobra.Command{
 		renameFile(f, f+".1")
 		f = fmt.Sprintf("%s/%s", logs.logDir, InputCsv)
 		renameFile(f, f+".1")
-		fmt.Println(f)
 	},
 }
 
