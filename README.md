@@ -235,19 +235,20 @@ The procedure for adding parameters A and B, for example, is as follows.
         
   2. Define the parameter names in the "ExFields" section of the test set definition in contest.toml.
    
-    ```toml
-    [{SetName}]
-    SetName = '{SetName}'
-    TestDataPath = 'test/{SetName}/'
-    TestDataNum = 3000
-    ExFields = 'A B'  
-    IsSystemTest = false
-    ```
+  ```toml
+  [{SetName}]
+  SetName = '{SetName}'
+  TestDataPath = 'test/{SetName}/'
+  TestDataNum = 3000
+  ExFields = 'A B'  
+  IsSystemTest = false
+  ```
     
 <br>
 
 ### 7. Display only test execution results
 Execute the run command with the "-q" flag. (Results are displayed in the order of geometric mean, arithmetic mean, number of test cases, and number of errors)
+
 ```shell
 $hc run -q
 10512 20835 30 0
@@ -257,6 +258,7 @@ $hc run -q
 
 ### 8. Set specific environment variables during CLI execution
 Add the definitions to the env section of contest.toml with the keys and values paired as shown below.
+
 ```toml
 [env]
 Keys = ['DEBUG']
