@@ -288,7 +288,7 @@ func genTestSet(begin, cnt int, setName string) {
 	t := TestSet{}
 	t.TestDataNum = cnt
 	t.SetName = setName
-	t.IsSystemTest = true
+	t.IsSystemTest = false
 	t.TestDataPath = testPath
 	conf.TestSets[setName] = t
 	conf.Common.DefaultSet = setName

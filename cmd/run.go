@@ -578,9 +578,9 @@ func runSingleCmd(id string) {
 	}
 
 	if len(logs.vals2) != 0 && set.IsSystemTest {
-		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best2[opt.target], calcRank(sc, int(opt.target)), len(logs.vals2))
+		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best2[opt.target], calcRank(sc, int(opt.target)), len(logs.vals2)+1)
 	} else {
-		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best[opt.target], calcRank(sc, int(opt.target)), len(logs.vals))
+		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best[opt.target], calcRank(sc, int(opt.target)), len(logs.vals)+1)
 	}
 
 	if len(set.Seeds) != 0 {
