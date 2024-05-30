@@ -1,4 +1,5 @@
-[English version of `README.md`](https://github.com/ynzwtks/hc/main/README.md)
+[English version of `README.md`](./README.md)
+
 # hc
 hcはAtCoder Heuristic Contestのローカルテストをサポートするためのcliツールです。
 シングルバイナリのシンプルな構成かつインタラクティブなセットアップで導入時の面倒な作業を極力なくし、テスト実行からログの記録までサポートします。
@@ -266,4 +267,4 @@ Values = ['true']
 <br>
 
 ### 9. Google Cloud Run Jobsでテストを並列実行する
-  - 　今後追記予定
+  - 今後追記予定

@@ -1,4 +1,4 @@
-[日本語版の `README.md`](https://github.com/ynzwtks/hc/main/README.ja.md)
+[日本語版の `README.md`](./README.ja.md)
 
 # hc
 hc is a CLI tool to support local testing for the AtCoder Heuristic Contest. It features a simple single-binary setup and interactive installation to minimize initial setup tasks, supporting everything from test execution to log recording.
