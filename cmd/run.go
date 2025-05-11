@@ -2,18 +2,20 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/schollz/progressbar/v3"
-	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 	"io"
 	"math"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/schollz/progressbar/v3"
+	"github.com/spf13/cobra"
+	"golang.org/x/exp/slices"
 )
 
 // runCmd Run the test set
@@ -24,16 +26,12 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		commonInit()
 
-		// ビルド定義がある場合は実行する。結果がエラーの場合はコマンドを終了する。
-		if len(cmn.BuildCmd) != 0 {
-			buildCmd(cmn.BuildCmd)
-		}
 		runtimeInit()
 
 		//テストID指定(-t)の場合
 		if opt.target != -1 {
 			if opt.target >= set.TestDataNum || opt.target < 0 {
-				fmt.Fprintf(os.Stderr, "Error: The test number is out of range")
+				errorPrint("The test number is out of range")
 				return
 			}
 			runSingleCmd(fmt.Sprintf("%04d", ri.testID[0]))
@@ -497,89 +495,333 @@ func draw(mutex *sync.Mutex) {
 	}
 
 	mutex.Unlock()
-
 }
 
 func runTestCmd(id string) (int, bool) {
+	if opt.debugMode {
+		debugPrint("runTestCmd started with id=%s", id)
+		debugPrint("TestDataPath=%s", set.TestDataPath)
+	}
 
+	// まず標準のテストファイルパスを試みる
 	testFile := fmt.Sprintf("%s/%s.txt", set.TestDataPath, id)
 
-	setEnvVar("INPUT_FILE", testFile)
-
-	var s []string
-	var o1, o2 string
-	var err error
-
-	if cmn.IsInteractive == true {
-		cmd := strings.Fields(cmn.JudgeProgram)
-		cmd = append(cmd, strings.Fields(cmn.TargetProgram)...)
-		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, false, false)
-		s = strings.Split(string(o2), "\n")
-	} else {
-		cmd := strings.Fields(cmn.TargetProgram)
-		o1, o2, err = ExecuteWithFileInput(testFile, cmd, false, false)
-
-		tmpFile := fmt.Sprintf("%s/%s_o.txt", set.TestDataPath, id)
-		writeToFile(tmpFile, []byte(o1), false)
-
-		o3, _ := executeCommand([]string{cmn.JudgeProgram, testFile, tmpFile})
-		s = strings.Split(string(o3), "\n")
-	}
-	idx := 0
-	for i := len(s) - 1; i >= 0; i-- {
-		if strings.HasPrefix(s[i], cmn.ScoreLine) {
-			idx = i
-			break
-
+	// 標準のパスが存在しない場合、"in"サブディレクトリを試みる
+	if !fileExists(testFile) {
+		inTestFile := fmt.Sprintf("%s/in/%s.txt", set.TestDataPath, id)
+		if fileExists(inTestFile) {
+			testFile = inTestFile
+			if opt.debugMode {
+				debugPrint("Using test file in 'in' subdirectory: %s", testFile)
+			}
 		}
 	}
-	t := strings.Fields(s[idx])
-	sc, err := strconv.Atoi(t[len(t)-1])
-	return sc, err == nil
+
+	if opt.debugMode {
+		debugPrint("Looking for test file: %s", testFile)
+		debugPrint("File exists: %v", fileExists(testFile))
+	}
+
+	// 入力ファイルが存在するか確認
+	if !fileExists(testFile) {
+		// 絶対パスを取得
+		absPath, pathErr := filepath.Abs(testFile)
+		if pathErr != nil {
+			absPath = testFile // エラー時は相対パスだけを使用
+		}
+		errorPrint("Input file not found")
+		fmt.Fprintf(os.Stderr, "  Absolute path: %s\n", absPath)
+		return 0, false
+	}
+
+	envErr := setEnvVar("INPUT_FILE", testFile)
+	if opt.debugMode && envErr != nil {
+		debugPrint("Error setting INPUT_FILE environment variable: %v", envErr)
+	}
+
+	var s []string
+
+	if cmn.IsInteractive == true {
+		if opt.debugMode {
+			debugPrint("Running interactive mode")
+			debugPrint("JudgeProgram=%s", cmn.JudgeProgram)
+			debugPrint("TargetProgram=%s", cmn.TargetProgram)
+		}
+		cmd := strings.Fields(cmn.JudgeProgram)
+		cmd = append(cmd, strings.Fields(cmn.TargetProgram)...)
+		if opt.debugMode {
+			debugPrint("Full command=%v", cmd)
+		}
+		o1, o2, exitCode := ExecuteWithFileInput(testFile, cmd, false, false)
+		if opt.debugMode {
+			debugPrint("Interactive command exit code: %v", exitCode)
+			if len(o1) > 0 {
+				debugPrint("First 100 chars of stdout: %s", truncString(o1, 100))
+			}
+			if len(o2) > 0 {
+				debugPrint("First 100 chars of stderr: %s", truncString(o2, 100))
+			}
+		}
+		s = strings.Split(string(o2), "\n")
+	} else {
+		if opt.debugMode {
+			debugPrint("Running non-interactive mode")
+			debugPrint("TargetProgram=%s", cmn.TargetProgram)
+		}
+		cmd := strings.Fields(cmn.TargetProgram)
+		if opt.debugMode {
+			debugPrint("Target command=%v", cmd)
+		}
+		o1, o2, execErr := ExecuteWithFileInput(testFile, cmd, false, false)
+		if opt.debugMode {
+			if execErr != nil {
+				debugPrint("Target command error: %v", execErr)
+			}
+			if len(o1) > 0 {
+				debugPrint("First 100 chars of stdout: %s", truncString(o1, 100))
+			}
+			if len(o2) > 0 {
+				debugPrint("First 100 chars of stderr: %s", truncString(o2, 100))
+			}
+		}
+		s = strings.Split(string(o2), "\n")
+	}
+
+	lineIdx := -1
+	for i := len(s) - 1; i >= 0; i-- {
+		if strings.HasPrefix(s[i], cmn.ScoreLine) {
+			lineIdx = i
+			break
+		}
+	}
+
+	if opt.debugMode {
+		debugPrint("Looking for score line with prefix '%s'", cmn.ScoreLine)
+		debugPrint("Score line index: %d", lineIdx)
+	}
+
+	// スコア行が見つからなかった場合のエラーハンドリング
+	if lineIdx == -1 {
+		warningPrint("Score line with prefix '%s' not found in output.", cmn.ScoreLine)
+		if opt.debugMode {
+			debugPrint("Output lines count: %d", len(s))
+			if len(s) > 0 {
+				debugPrint("Last few lines of output:")
+				start := max(0, len(s)-5)
+				for i := start; i < len(s); i++ {
+					debugPrint("[%d] %s", i, s[i])
+				}
+			}
+		}
+		return 0, false
+	}
+
+	t := strings.Fields(s[lineIdx])
+	if opt.debugMode {
+		debugPrint("Score line: '%s'", s[lineIdx])
+		debugPrint("Score fields: %v", t)
+	}
+
+	if len(t) == 0 {
+		warningPrint("Empty score line found.")
+		return 0, false
+	}
+
+	sc, parseErr := strconv.Atoi(t[len(t)-1])
+	if opt.debugMode {
+		if parseErr != nil {
+			debugPrint("Error parsing score: %v", parseErr)
+		} else {
+			debugPrint("Parsed score: %d", sc)
+		}
+	}
+	return sc, parseErr == nil
 }
 func runSingleCmd(id string) {
+	if opt.debugMode {
+		debugPrint("runSingleCmd started with id=%s", id)
+		debugPrint("TestDataPath=%s", set.TestDataPath)
+		wd, _ := os.Getwd()
+		debugPrint("Current working directory: %s", wd)
+	}
 
+	// まず標準のテストファイルパスを試みる
 	testFile := fmt.Sprintf("%s/%s.txt", set.TestDataPath, id)
 
-	setEnvVar("INPUT_FILE", testFile)
+	// 標準のパスが存在しない場合、"in"サブディレクトリを試みる
+	if !fileExists(testFile) {
+		inTestFile := fmt.Sprintf("%s/in/%s.txt", set.TestDataPath, id)
+		if fileExists(inTestFile) {
+			testFile = inTestFile
+			if opt.debugMode {
+				debugPrint("Using test file in 'in' subdirectory: %s", testFile)
+			}
+		}
+	}
+
+	if opt.debugMode {
+		debugPrint("Looking for test file: %s", testFile)
+		debugPrint("File exists: %v", fileExists(testFile))
+	}
+	// 入力ファイルが存在するか確認
+	if !fileExists(testFile) {
+		// 絶対パスを取得
+		absPath, pathErr := filepath.Abs(testFile)
+		if pathErr != nil {
+			absPath = testFile // エラー時は相対パスだけを使用
+		}
+
+		errorPrint("Input file not found")
+		fmt.Fprintf(os.Stderr, "  Relative path: %s\n", testFile)
+		fmt.Fprintf(os.Stderr, "  Absolute path: %s\n", absPath)
+		return
+	}
+
+	envErr := setEnvVar("INPUT_FILE", testFile)
+	if opt.debugMode && envErr != nil {
+		debugPrint("Error setting INPUT_FILE environment variable: %v", envErr)
+	}
 
 	var s []string
 	var o1, o2 string
 	var err error
 	if cmn.IsInteractive == true {
+		if opt.debugMode {
+			debugPrint("Running interactive mode")
+			debugPrint("JudgeProgram=%s", cmn.JudgeProgram)
+			debugPrint("TargetProgram=%s", cmn.TargetProgram)
+		}
 		cmd := strings.Fields(cmn.JudgeProgram)
 		cmd = append(cmd, strings.Fields(cmn.TargetProgram)...)
-		o1, o2, _ = ExecuteWithFileInput(testFile, cmd, false, false)
+		if opt.debugMode {
+			debugPrint("Full command=%v", cmd)
+		}
+		o1, o2, exitCode := ExecuteWithFileInput(testFile, cmd, false, false)
+		if opt.debugMode {
+			debugPrint("Interactive command exit code: %v", exitCode)
+			if len(o1) > 0 {
+				debugPrint("First 100 chars of stdout: %s", truncString(o1, 100))
+			}
+			if len(o2) > 0 {
+				debugPrint("First 100 chars of stderr: %s", truncString(o2, 100))
+			}
+		}
 		_ = o1
 		s = strings.Split(string(o2), "\n")
 
 	} else {
+		if opt.debugMode {
+			debugPrint("Running non-interactive mode")
+			debugPrint("TargetProgram=%s", cmn.TargetProgram)
+		}
 		cmd := strings.Fields(cmn.TargetProgram)
+		if opt.debugMode {
+			debugPrint("Target command=%v", cmd)
+		}
 		o1, o2, err = ExecuteWithFileInput(testFile, cmd, false, true)
+		if opt.debugMode {
+			if err != nil {
+				debugPrint("Target command error: %v", err)
+			}
+			if len(o1) > 0 {
+				debugPrint("First 100 chars of stdout: %s", truncString(o1, 100))
+			}
+			if len(o2) > 0 {
+				debugPrint("First 100 chars of stderr: %s", truncString(o2, 100))
+			}
+		}
 
 		tmpFile := fmt.Sprintf("%s/out.txt", previousDirectory)
-		writeToFile(tmpFile, []byte(o1), false)
+		if opt.debugMode {
+			debugPrint("Writing output to file: %s", tmpFile)
+		}
+		writeErr := writeToFile(tmpFile, []byte(o1), false)
+		if opt.debugMode && writeErr != nil {
+			debugPrint("Error writing to output file: %v", writeErr)
+		}
 
-		o3, _ := executeCommand([]string{cmn.JudgeProgram, testFile, tmpFile})
+		if opt.debugMode {
+			debugPrint("JudgeProgram=%s", cmn.JudgeProgram)
+			debugPrint("Running judge command: %s %s %s", cmn.JudgeProgram, testFile, tmpFile)
+		}
+		o3, judgeErr := executeCommand([]string{cmn.JudgeProgram, testFile, tmpFile})
+		if opt.debugMode {
+			if judgeErr != nil {
+				debugPrint("Judge command error: %v", judgeErr)
+			}
+			if len(o3) > 0 {
+				debugPrint("First 100 chars of judge output: %s", truncString(string(o3), 100))
+			}
+		}
 		s = strings.Split(string(o3), "\n")
 	}
-	idx := 0
+	lineIdx := -1
 	for i := len(s) - 1; i >= 0; i-- {
 		if strings.HasPrefix(s[i], cmn.ScoreLine) {
-			idx = i
+			lineIdx = i
 			break
 		}
 	}
-	t := strings.Fields(s[idx])
-	sc, err := strconv.Atoi(t[len(t)-1])
-	idx, _ = strconv.Atoi(id)
-	if err != nil {
+
+	if opt.debugMode {
+		debugPrint("Looking for score line with prefix '%s'", cmn.ScoreLine)
+		debugPrint("Score line index: %d", lineIdx)
+	}
+
+	// スコア行が見つからなかった場合のエラーハンドリング
+	sc := 0
+	var parseErr error
+	if lineIdx == -1 {
+		warningPrint("Score line with prefix '%s' not found in output.", cmn.ScoreLine)
+		if opt.debugMode {
+			debugPrint("Output lines count: %d", len(s))
+			if len(s) > 0 {
+				debugPrint("Last few lines of output:")
+				start := max(0, len(s)-5)
+				for i := start; i < len(s); i++ {
+					debugPrint("[%d] %s", i, s[i])
+				}
+			}
+		}
+		parseErr = fmt.Errorf("score line not found")
+	} else {
+		t := strings.Fields(s[lineIdx])
+		if opt.debugMode {
+			debugPrint("Score line: '%s'", s[lineIdx])
+			debugPrint("Score fields: %v", t)
+		}
+		if len(t) == 0 {
+			warningPrint("Empty score line found.")
+			parseErr = fmt.Errorf("empty score line")
+		} else {
+			sc, parseErr = strconv.Atoi(t[len(t)-1])
+			if opt.debugMode {
+				if parseErr != nil {
+					debugPrint("Error parsing score: %v", parseErr)
+				} else {
+					debugPrint("Parsed score: %d", sc)
+				}
+			}
+		}
+	}
+
+	idx, _ := strconv.Atoi(id)
+	if parseErr != nil {
 		ri.ng = append(ri.ng, idx)
+		if opt.debugMode {
+			debugPrint("Adding to NG list: %d", idx)
+		}
 	}
 
 	if len(logs.vals2) != 0 && set.IsSystemTest {
+		if opt.debugMode {
+			debugPrint("System test mode, using best2 values")
+		}
 		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best2[opt.target], calcRank(sc, int(opt.target)), len(logs.vals2)+1)
 	} else {
+		if opt.debugMode {
+			debugPrint("Normal mode, using best values")
+		}
 		fmt.Printf("No=%04d Score=%d  Best=%d Rank=%d/%d\n", opt.target, sc, logs.best[opt.target], calcRank(sc, int(opt.target)), len(logs.vals)+1)
 	}
 
@@ -600,5 +842,6 @@ func init() {
 	runCmd.Flags().IntVarP(&opt.loop, "loop", "l", 1, "Set filter definition")
 	runCmd.Flags().IntVarP(&opt.target, "target", "t", -1, "Set filter definition")
 	runCmd.Flags().StringVarP(&opt.logMsg, "write-log", "w", "", "log & comment")
+	runCmd.Flags().BoolVarP(&opt.debugMode, "debug", "x", false, "Enable debug output")
 
 }

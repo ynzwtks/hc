@@ -269,3 +269,13 @@ Values = ['true']
 
 ### 9. Execute tests in parallel using Google Cloud Run Jobs
   -  To be added in the future.
+
+<br>
+
+## Change Log
+
+### 2025-05-11
+- Changed directory structure for test cases
+  - Input files: Now placed and referenced in `./test/${setname}/in/`
+  - Output files: Now output to `./test/${setname}/out/`
+  - Removed `_o` suffix from output filenames to match input filenames

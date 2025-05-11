@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/spf13/cobra"
 	"math"
-	"os"
 	"sort"
 	"strconv"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/spf13/cobra"
 )
 
 var logCmd = &cobra.Command{
@@ -54,7 +54,7 @@ func showResults(id string) {
 			}
 		}
 		if ok == false {
-			fmt.Fprintln(os.Stderr, "Error: log not found")
+			errorPrint("log not found")
 			return
 		}
 	}

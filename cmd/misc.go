@@ -5,17 +5,19 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/constraints"
 	"io"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/constraints"
 )
 
 func abs[T constraints.Signed](a T) T     { return cond(a >= 0, a, -a) }
@@ -29,6 +31,11 @@ func cond[T any](t bool, a, b T) T {
 	}
 }
 
+// 空の関数定義として残し、fixed.goで定義されている関数を使用する
+func trunc(s string, maxLen int) string {
+	return truncString(s, maxLen)
+}
+
 // setEnvVar は環境変数を設定します。
 func setEnvVar(key, val string) error {
 	err := os.Setenv(key, val)
@@ -40,8 +47,24 @@ func setEnvVar(key, val string) error {
 
 // headReader は指定したファイルの先頭行を読み込みます。
 func headReader(dir string, fileName string) []string {
-	file, err := os.Open(fmt.Sprintf("%s/%s", dir, fileName))
+	filePath := fmt.Sprintf("%s/%s", dir, fileName)
+
+	// ファイルの存在を確認
+	if !fileExists(filePath) {
+		// 絶対パスを取得
+		absPath, err := filepath.Abs(filePath)
+		if err != nil {
+			absPath = filePath // エラー時は相対パスだけを使用
+		}
+		errorPrint("File not found")
+		fmt.Fprintf(os.Stderr, "  Relative path: %s\n", filePath)
+		fmt.Fprintf(os.Stderr, "  Absolute path: %s\n", absPath)
+		return nil
+	}
+
+	file, err := os.Open(filePath)
 	if err != nil {
+		errorPrint("Failed to open file: %s (%v)", filePath, err)
 		return nil
 	}
 	defer file.Close()
@@ -52,6 +75,7 @@ func headReader(dir string, fileName string) []string {
 		head = scanner.Text()
 	}
 	if err := scanner.Err(); err != nil {
+		errorPrint("Failed to read file: %s (%v)", filePath, err)
 		return nil
 	}
 	return strings.Fields(head)
@@ -59,9 +83,28 @@ func headReader(dir string, fileName string) []string {
 
 // ExecuteWithFileInput はファイルから入力を読み込んでプログラムを実行します。
 func ExecuteWithFileInput(filePath string, cmd []string, displayStdout bool, displayStderr bool) (stdout string, stderr string, execErr error) {
+	if opt.debugMode {
+		debugPrint("ExecuteWithFileInput: file path: %s", filePath)
+		debugPrint("ExecuteWithFileInput: command: %v", cmd)
+	}
+	// ファイルの存在を再確認
+	if !fileExists(filePath) {
+		err := fmt.Errorf("file not found: %s", filePath)
+		if opt.debugMode {
+			debugPrint("ExecuteWithFileInput: file not found: %s", filePath)
+		}
+		return "", "", err
+	}
+
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return "", "", err
+		if opt.debugMode {
+			debugPrint("ExecuteWithFileInput: failed to read file: %s: %v", filePath, err)
+		}
+		return "", "", fmt.Errorf("failed to read file: %s: %v", filePath, err)
+	}
+	if opt.debugMode {
+		debugPrint("ExecuteWithFileInput: successfully read file: %s (size: %d bytes)", filePath, len(data))
 	}
 
 	// Set up the command with the program path and pipe the input data to stdin
@@ -86,20 +129,42 @@ func ExecuteWithFileInput(filePath string, cmd []string, displayStdout bool, dis
 		c.Stderr = &errb
 	}
 	// Execute the command
+	if opt.debugMode {
+		debugPrint("ExecuteWithFileInput: executing command")
+	}
 	err = c.Run()
 	if err != nil {
+		if opt.debugMode {
+			debugPrint("ExecuteWithFileInput: command error: %v", err)
+			debugPrint("ExecuteWithFileInput: stdout length: %d", outb.Len())
+			debugPrint("ExecuteWithFileInput: stderr length: %d", errb.Len())
+			if errb.Len() > 0 {
+				debugPrint("ExecuteWithFileInput: first 100 chars of stderr: %s", truncString(errb.String(), 100))
+			}
+		}
 		return outb.String(), errb.String(), err
 	}
 
+	if opt.debugMode {
+		debugPrint("ExecuteWithFileInput: command completed successfully")
+		debugPrint("ExecuteWithFileInput: stdout length: %d", outb.Len())
+		debugPrint("ExecuteWithFileInput: stderr length: %d", errb.Len())
+	}
 	return outb.String(), errb.String(), nil
 }
 
 // executeCommand は単一のコマンドを実行し、その出力を返します。
 func executeCommand(command []string) ([]byte, error) {
+	if opt.debugMode {
+		debugPrint("executeCommand: running command: %v", command)
+	}
 	cmd := exec.Command(command[0], command[1:]...)
 	o, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, err
+	if err != nil && opt.debugMode {
+		debugPrint("executeCommand: command error: %v", err)
+	}
+	if opt.debugMode && len(o) > 0 {
+		debugPrint("executeCommand: first 100 chars of output: %s", truncString(string(o), 100))
 	}
 	return o, err
 }
@@ -166,6 +231,15 @@ func fileExists(filePath string) bool {
 		return false
 	}
 	return err == nil
+}
+
+// dirExists は指定したディレクトリが存在するかどうかを確認します。
+func dirExists(dirPath string) bool {
+	info, err := os.Stat(dirPath)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil && info.IsDir()
 }
 
 // downloadFile はURLからファイルをダウンロードします。
@@ -442,4 +516,46 @@ func dbg(file string, s ...interface{}) {
 		msg := fmt.Sprintf("%s:%d:%s\n", funcName, line, fmt.Sprint(s))
 		writeToFile(file, []byte(msg), true)
 	}
+}
+
+// truncString は文字列を指定された長さに切り詰める
+func truncString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
+}
+
+// ANSIカラーコード
+const (
+	ColorReset  = "\033[0m"
+	ColorRed    = "\033[31m" // エラー用の赤色
+	ColorYellow = "\033[33m" // 警告用の黄色
+	ColorBlue   = "\033[34m" // デバッグ用の青色
+	ColorGreen  = "\033[32m" // 成功用の緑色
+)
+
+// デバッグレベルの出力関数 (青色)
+func debugPrint(format string, args ...interface{}) {
+	if opt.debugMode {
+		fmt.Fprintf(os.Stderr, ColorBlue+"DEBUG: "+format+ColorReset+"\n", args...)
+	}
+}
+
+// エラーメッセージを赤色で出力する関数
+func errorPrint(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, ColorRed+"Error: "+format+ColorReset+"\n", args...)
+
+}
+
+// 警告メッセージを黄色で出力する関数
+func warningPrint(format string, args ...interface{}) {
+
+	fmt.Fprintf(os.Stderr, ColorYellow+"Warning: "+format+ColorReset+"\n", args...)
+
+}
+
+// 成功メッセージを緑色で出力する関数
+func successPrint(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, ColorGreen+format+ColorReset+"\n", args...)
 }

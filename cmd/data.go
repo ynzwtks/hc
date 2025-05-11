@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/schollz/progressbar/v3"
 	"time"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 var version string
@@ -93,6 +94,7 @@ type Options struct {
 	order         string
 	linesLimit    int
 	quietMode     bool
+	debugMode     bool // デバッグ出力用フラグ
 	testSeedBegin int
 	testCount     int
 }

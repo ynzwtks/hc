@@ -2,16 +2,18 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+
 	"github.com/Knetic/govaluate"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/viper"
-	"log"
-	"os"
-	"sort"
-	"strconv"
-	"strings"
 )
 
 func commonInit() {
@@ -209,7 +211,11 @@ func filterEvaluate(s []string) bool {
 func readParameter() {
 	//hi.HeaderData = make([][]string, set.TestDataNum)
 
-	set.Seeds = readFileLines(fmt.Sprintf("%s/%s", set.TestDataPath, "seeds.txt"))
+	seedsFile := fmt.Sprintf("%s/%s", set.TestDataPath, "seeds.txt")
+	if !fileExists(seedsFile) {
+		warningPrint("Seeds file not found: %s", seedsFile)
+	}
+	set.Seeds = readFileLines(seedsFile)
 
 	ri.caption = append(ri.caption, "")
 	fs := strings.Fields(cmn.InputFields)
@@ -219,9 +225,28 @@ func readParameter() {
 		fs = append(fs, exHeader...)
 	}
 	hi.Header = fs
+	// 入力ファイルディレクトリの存在を確認
+	inputDir := fmt.Sprintf("%s/in", set.TestDataPath)
+	if !dirExists(inputDir) {
+		// 絶対パスを取得
+		absInputDir, err := filepath.Abs(inputDir)
+		if err != nil {
+			absInputDir = inputDir // エラー時は相対パスだけを使用
+		}
+
+		errorPrint("Input directory not found")
+		fmt.Fprintf(os.Stderr, "  Relative path: %s\n", inputDir)
+		fmt.Fprintf(os.Stderr, "  Absolute path: %s\n", absInputDir)
+		os.Exit(1) // エラーコードを返して終了
+	}
+
 	for i := 0; i < set.TestDataNum; i++ {
 		fileName := fmt.Sprintf("%04d.txt", i)
-		ret := headReader(set.TestDataPath, fileName)
+		ret := headReader(fmt.Sprintf("%s/in", set.TestDataPath), fileName)
+		if ret == nil {
+			warningPrint("Could not read test file %s/in/%s", set.TestDataPath, fileName)
+			ret = []string{} // 空の配列を設定して処理を継続
+		}
 		if len(exHeader) != 0 && len(exDat) == set.TestDataNum {
 			ret = append(ret, exDat[i]...)
 		}
@@ -317,7 +342,11 @@ func readExParam(testDataPath string, testDataNum int, fields string) ([]string,
 	if len(fs) == 0 {
 		return nil, nil
 	}
-	fr := NewFileReader(fmt.Sprintf("%s/ex.dat", testDataPath))
+
+	// ex.datファイルをtest/${setname}ディレクトリから探す
+	exDatPath := fmt.Sprintf("%s/ex.dat", testDataPath)
+
+	fr := NewFileReader(exDatPath)
 	if fr == nil {
 		return nil, nil
 	}
@@ -337,7 +366,7 @@ func buildCmd(cmd string) bool {
 	}
 	_, err := executeCommand2(cmd)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to execute command '%s': %s\n", cmd, err)
+		errorPrint("Failed to execute command '%s': %s", cmd, err)
 		os.Exit(1)
 	}
 	return true

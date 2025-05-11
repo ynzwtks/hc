@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
-	"os"
-	"strings"
 )
 
 var configCmd = &cobra.Command{
@@ -227,6 +228,15 @@ func setupSystemTest(contestName string) {
 	testPath := fmt.Sprintf("test/system")
 	createDirIfNotExist(logsPath)
 	createDirIfNotExist(testPath)
+
+	// 入力ファイル用のディレクトリを作成
+	inPath := fmt.Sprintf("%s/in", testPath)
+	createDirIfNotExist(inPath)
+
+	// 出力ファイル用のディレクトリを作成
+	outPath := fmt.Sprintf("%s/out", testPath)
+	createDirIfNotExist(outPath)
+
 	seeds := fmt.Sprintf("%s/seeds.txt", testPath)
 
 	inputCsv := fmt.Sprintf("%s/input.csv", logsPath)
@@ -237,7 +247,7 @@ func setupSystemTest(contestName string) {
 		os.Exit(1)
 	}
 
-	cmd := []string{cmn.GenProgram, seeds, "-d", testPath}
+	cmd := []string{cmn.GenProgram, seeds, "-d", inPath}
 	_, err = executeCommand(cmd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create seeds file: %s\n", cmd)
@@ -273,6 +283,15 @@ func genTestSet(begin, cnt int, setName string) {
 	}
 	testPath := fmt.Sprintf("test/%s", setName)
 	createDirIfNotExist(testPath)
+
+	// 入力ファイル用のディレクトリを作成
+	inPath := fmt.Sprintf("%s/in", testPath)
+	createDirIfNotExist(inPath)
+
+	// 出力ファイル用のディレクトリを作成
+	outPath := fmt.Sprintf("%s/out", testPath)
+	createDirIfNotExist(outPath)
+
 	seeds := fmt.Sprintf("%s/seeds.txt", testPath)
 
 	dat := make([]byte, 0)
@@ -280,7 +299,7 @@ func genTestSet(begin, cnt int, setName string) {
 		dat = append(dat, []byte(fmt.Sprintf("%d\n", i))...)
 	}
 	writeToFile(seeds, dat, false)
-	cmd := []string{cmn.GenProgram, seeds, "-d", testPath}
+	cmd := []string{cmn.GenProgram, seeds, "-d", inPath}
 	executeCommand(cmd)
 
 	t := TestSet{}

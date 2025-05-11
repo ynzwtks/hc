@@ -1,0 +1,73 @@
+# バイナリファイル
+/hc
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# テスト用バイナリ
+*.test
+
+# カバレッジファイル
+*.out
+
+# 依存関係ディレクトリ（ベンダリングを使用している場合）
+/vendor/
+
+# 出力ファイル
+/out.txt
+
+# 設定ファイル
+/contest.toml
+
+# スクリプトファイル
+/solution.sh
+/tester.sh
+
+# テストデータ
+/test/
+
+# ログファイル
+/logs/
+*.log
+
+# IDEA関連
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code関連
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# macOS特有のファイル
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# キャッシュ
+/.cache/
+
+# ビルドディレクトリ
+/dist/
+/bin/
+
+# ローカル設定ファイル
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# デバッグファイル
+debug
+
+# カスタムのバックアップやテンポラリファイル
+*~
+*.bak
+*.tmp
