@@ -584,7 +584,30 @@ func runTestCmd(id string) (int, bool) {
 				debugPrint("First 100 chars of stderr: %s", truncString(o2, 100))
 			}
 		}
-		s = strings.Split(string(o2), "\n")
+
+		tmpFile := fmt.Sprintf("%s/%s_o.txt", set.TestDataPath, id)
+		if opt.debugMode {
+			debugPrint("Writing output to file: %s", tmpFile)
+		}
+		writeErr := writeToFile(tmpFile, []byte(o1), false)
+		if opt.debugMode && writeErr != nil {
+			debugPrint("Error writing to output file: %v", writeErr)
+		}
+
+		if opt.debugMode {
+			debugPrint("JudgeProgram=%s", cmn.JudgeProgram)
+			debugPrint("Running judge command: %s %s %s", cmn.JudgeProgram, testFile, tmpFile)
+		}
+		o3, judgeErr := executeCommand([]string{cmn.JudgeProgram, testFile, tmpFile})
+		if opt.debugMode {
+			if judgeErr != nil {
+				debugPrint("Judge command error: %v", judgeErr)
+			}
+			if len(o3) > 0 {
+				debugPrint("First 100 chars of judge output: %s", truncString(string(o3), 100))
+			}
+		}
+		s = strings.Split(string(o3), "\n")
 	}
 
 	lineIdx := -1
